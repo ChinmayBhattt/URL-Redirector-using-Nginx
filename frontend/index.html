@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini URL Redirector | Nginx Learning Lab</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header>
+            <h1>Mini URL Redirector</h1>
+            <p>Hands-on DevOps learning project exploring Nginx as a Web Server & Reverse Proxy</p>
+            <span class="badge">Nginx + Node.js (Express)</span>
+        </header>
+
+        <!-- Feature 1: URL Redirector Form -->
+        <div class="card">
+            <h2>🔗 URL Redirector</h2>
+            <p class="desc">
+                Enter any destination URL below. Nginx will route this request to the Node.js backend 
+                (<code>/redirect?url=...</code>), which validates the URL and issues an HTTP 302 redirect.
+            </p>
+            <form id="redirectForm" class="redirect-form" onsubmit="handleFormRedirect(event)">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="urlInput" 
+                        placeholder="https://github.com or https://news.ycombinator.com" 
+                        required 
+                    />
+                </div>
+                <button type="submit">Redirect Me</button>
+            </form>
+        </div>
+
+        <!-- Feature 2: Practical Nginx Testing Lab -->
+        <div class="card">
+            <h2>🧪 Nginx Routing & Proxy Lab</h2>
+            <p class="desc">
+                Click any of the test actions below to observe how Nginx handles different types of routes:
+            </p>
+            <div class="test-grid">
+                <!-- Test 1: Reverse Proxy /api/hello -->
+                <div class="test-item">
+                    <div>
+                        <h3>Reverse Proxy Hello</h3>
+                        <code>GET /api/hello</code>
+                        <p>Proxied by Nginx to Express backend on port 3000.</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="fetchApi('/api/hello')">Test /api/hello</button>
+                </div>
+
+                <!-- Test 2: Reverse Proxy /api/time -->
+                <div class="test-item">
+                    <div>
+                        <h3>Server Timestamp</h3>
+                        <code>GET /api/time</code>
+                        <p>Proxied by Nginx to Express backend to fetch dynamic server time.</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="fetchApi('/api/time')">Test /api/time</button>
+                </div>
+
+                <!-- Test 3: Nginx Custom 302 Redirect -->
+                <div class="test-item">
+                    <div>
+                        <h3>Nginx 302 Redirect</h3>
+                        <code>GET /google</code>
+                        <p>Handled directly inside Nginx using <code>return 302</code> (bypasses Node.js entirely!).</p>
+                    </div>
+                    <a href="/google" class="btn btn-warning" target="_blank" rel="noopener">Visit /google</a>
+                </div>
+
+                <!-- Test 4: Custom 404 Error Page -->
+                <div class="test-item">
+                    <div>
+                        <h3>Custom 404 Page</h3>
+                        <code>GET /this-does-not-exist</code>
+                        <p>Nginx catches missing routes and renders the custom <code>404.html</code> page.</p>
+                    </div>
+                    <a href="/this-does-not-exist" class="btn btn-secondary" target="_blank">Trigger 404</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Response Output -->
+        <div class="card">
+            <h2>📡 API Response Viewer</h2>
+            <p class="desc">Live output of API calls forwarded through Nginx:</p>
+            <div id="output" class="console-box">// Click "Test /api/hello" or "Test /api/time" above to view responses...</div>
+        </div>
+
+        <!-- Architectural Request Flow -->
+        <div class="card">
+            <h2>🗺️ Request Routing Architecture</h2>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <span>1. Client Browser (Port 80)</span>
+                    <span class="flow-arrow">➔</span>
+                    <span>Nginx Server Block (listen 80)</span>
+                </div>
+                <div class="flow-step">
+                    <span>2. Static Requests (<code>/</code>, <code>/style.css</code>)</span>
+                    <span class="flow-arrow">➔</span>
+                    <span>Served directly from disk via <code>root</code> & <code>index</code></span>
+                </div>
+                <div class="flow-step">
+                    <span>3. Dynamic API (<code>/api/*</code>, <code>/redirect</code>)</span>
+                    <span class="flow-arrow">➔</span>
+                    <span>Forwarded to Node.js on port 3000 via <code>proxy_pass</code></span>
+                </div>
+                <div class="flow-step">
+                    <span>4. Custom Redirect (<code>/google</code>)</span>
+                    <span class="flow-arrow">➔</span>
+                    <span>Redirected instantly to google.com via <code>return 302</code></span>
+                </div>
+                <div class="flow-step">
+                    <span>5. Unknown Route (<code>/*</code> not found)</span>
+                    <span class="flow-arrow">➔</span>
+                    <span>Custom error page rendered via <code>error_page 404</code></span>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Mini URL Redirector &bull; Educational DevOps Lab &bull; Antigravity
+        </footer>
+    </div>
+
+    <script>
+        function handleFormRedirect(event) {
+            event.preventDefault();
+            const input = document.getElementById('urlInput');
+            let targetUrl = input.value.trim();
+            if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                targetUrl = 'https://' + targetUrl;
+            }
+            // Navigate through Nginx to backend /redirect?url=...
+            window.location.href = `/redirect?url=${encodeURIComponent(targetUrl)}`;
+        }
+
+        async function fetchApi(endpoint) {
+            const outputEl = document.getElementById('output');
+            outputEl.textContent = `Fetching ${endpoint} through Nginx reverse proxy...`;
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                outputEl.textContent = `// HTTP ${response.status} ${response.statusText}\n` + JSON.stringify(data, null, 2);
+            } catch (err) {
+                outputEl.textContent = `// Request Failed: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

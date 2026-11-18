@@ -1,0 +1,12 @@
+{
+  "name": "mini-url-redirector-backend",
+  "version": "1.0.0",
+  "description": "Mini Express backend for Nginx educational project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
